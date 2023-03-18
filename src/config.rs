@@ -4,7 +4,7 @@ use regex::Regex;
 
 #[derive(Debug)]
 pub struct Config {
-    rspec_primary_source_dirs: Vec<String>,
+    primary_source_dir_mappings: HashMap<String, Vec<String>>,
     test_file_mappings: HashMap<String, Regex>,
     test_file_suffixes: HashMap<String, String>,
     pub test_folders: HashMap<String, String>,
@@ -13,7 +13,7 @@ pub struct Config {
 impl Config {
     pub fn default() -> Config {
         Config {
-            rspec_primary_source_dirs: vec!["app".to_string(), "lib".to_string()],
+            primary_source_dir_mappings: HashMap::from([("rb".to_string(), vec!["app".to_string(), "lib".to_string()])]),
             test_file_suffixes: HashMap::from([("rb".to_string(), "_spec.rb".to_string())]),
             test_file_mappings: HashMap::from([(
                 "rb".to_string(),
@@ -23,11 +23,30 @@ impl Config {
         }
     }
 
+    pub fn primary_source_dirs(&self, extension: &String) -> Vec<String> {
+        self.primary_source_dir_mappings.get(extension).unwrap().to_vec()
+    }
+
+    pub fn strip_primary_source_dirs_from_path(&self, path: &String, extension: &String) -> String
+    {
+        let mut path = Path::new(&path);
+        let dirs = self.primary_source_dir_mappings.get(extension).unwrap();
+
+        for dir in dirs {
+            path = match path.strip_prefix(dir) {
+                Ok(p) => p,
+                Err(_) => path,
+            }
+        }
+
+        path.to_str().unwrap().to_string()
+    }
+
     pub fn target_to_test_name(&self, file: &String) -> String {
         let path = Path::new(&file);
         let file_name = path.file_stem().unwrap().to_str().unwrap();
         let extension = path.extension().unwrap().to_str().unwrap();
-        let suffix = self.test_file_mappings.get(extension).unwrap();
+        let suffix = self.test_file_suffixes.get(extension).unwrap();
         format!("{}{}", file_name, suffix)
     }
 

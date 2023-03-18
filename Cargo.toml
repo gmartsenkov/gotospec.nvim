@@ -10,4 +10,5 @@ crate-type = ["cdylib"]
 
 [dependencies]
 regex = "1"
+itertools = "0.10"
 mlua = { version = "0.8", features = ["luajit", "vendored", "module", "macros", "send", "async"] }
