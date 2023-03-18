@@ -1,8 +1,8 @@
 .PHONY: build
 build:
 	cargo build --release
-	rm -f ./lua/libmy_module.so
-	cp ./target/release/libmy_module.dylib ./lua/libmy_module.so
+	rm -f ./lua/goto.so
+	cp ./target/release/libgoto.dylib ./lua/goto.so
 	# if your Rust project has dependencies,
 	# you'll need to do this as well
 	mkdir -p ./lua/deps/

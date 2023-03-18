@@ -1,5 +1,5 @@
 [package]
-name = "my_module"
+name = "goto"
 version = "0.1.0"
 edition = "2021"
 
@@ -9,4 +9,5 @@ edition = "2021"
 crate-type = ["cdylib"]
 
 [dependencies]
+regex = "1"
 mlua = { version = "0.8", features = ["luajit", "vendored", "module", "macros", "send", "async"] }
