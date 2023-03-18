@@ -2,7 +2,7 @@ use std::{collections::HashMap, path::Path};
 
 use regex::Regex;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Config {
     primary_source_dir_mappings: HashMap<String, Vec<String>>,
     test_file_mappings: HashMap<String, Regex>,
@@ -13,7 +13,10 @@ pub struct Config {
 impl Config {
     pub fn default() -> Config {
         Config {
-            primary_source_dir_mappings: HashMap::from([("rb".to_string(), vec!["app".to_string(), "lib".to_string()])]),
+            primary_source_dir_mappings: HashMap::from([(
+                "rb".to_string(),
+                vec!["app".to_string(), "lib".to_string()],
+            )]),
             test_file_suffixes: HashMap::from([("rb".to_string(), "_spec.rb".to_string())]),
             test_file_mappings: HashMap::from([(
                 "rb".to_string(),
@@ -24,11 +27,13 @@ impl Config {
     }
 
     pub fn primary_source_dirs(&self, extension: &String) -> Vec<String> {
-        self.primary_source_dir_mappings.get(extension).unwrap().to_vec()
+        self.primary_source_dir_mappings
+            .get(extension)
+            .unwrap()
+            .to_vec()
     }
 
-    pub fn strip_primary_source_dirs_from_path(&self, path: &String, extension: &String) -> String
-    {
+    pub fn strip_primary_source_dirs_from_path(&self, path: &String, extension: &String) -> String {
         let mut path = Path::new(&path);
         let dirs = self.primary_source_dir_mappings.get(extension).unwrap();
 
