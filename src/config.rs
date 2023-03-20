@@ -1,17 +1,20 @@
-use std::{collections::HashMap, path::Path};
+use std::{
+    collections::HashMap,
+    path::{Path, PathBuf},
+};
 
 use regex::Regex;
 
 #[derive(Debug, Clone)]
 pub struct Config {
-    primary_source_dir_mappings: HashMap<String, Vec<String>>,
-    test_file_mappings: HashMap<String, Regex>,
-    test_file_suffixes: HashMap<String, String>,
+    pub primary_source_dir_mappings: HashMap<String, Vec<String>>,
+    pub test_file_mappings: HashMap<String, Regex>,
+    pub test_file_suffixes: HashMap<String, String>,
     pub test_folders: HashMap<String, String>,
 }
 
-impl Config {
-    pub fn default() -> Config {
+impl Default for Config {
+    fn default() -> Config {
         Config {
             primary_source_dir_mappings: HashMap::from([(
                 "rb".to_string(),
@@ -25,49 +28,55 @@ impl Config {
             test_folders: HashMap::from([("rb".to_string(), "spec".to_string())]),
         }
     }
-
+}
+impl Config {
     pub fn primary_source_dirs(&self, extension: &String) -> Vec<String> {
-        self.primary_source_dir_mappings
+        let dirs = self
+            .primary_source_dir_mappings
             .get(extension)
             .unwrap()
-            .to_vec()
+            .to_vec();
+
+        if dirs.len() == 0 {
+            vec!["".to_string()]
+        } else {
+            dirs
+        }
     }
 
-    pub fn strip_primary_source_dirs_from_path(&self, path: &String, extension: &String) -> String {
-        let mut path = Path::new(&path);
+    pub fn strip_primary_source_dirs_from_path(
+        &self,
+        path: &PathBuf,
+        extension: &String,
+    ) -> PathBuf {
+        let mut path = Path::new(path);
         let dirs = self.primary_source_dir_mappings.get(extension).unwrap();
 
         for dir in dirs {
-            path = match path.strip_prefix(dir) {
-                Ok(p) => p,
-                Err(_) => path,
-            }
+            path = path.strip_prefix(dir).unwrap_or_else(|_| path);
         }
 
-        path.to_str().unwrap().to_string()
+        path.to_path_buf()
     }
 
-    pub fn test_to_target_name(&self, file: &String) -> String {
-        let path = Path::new(&file);
-        let file_name = path.file_stem().unwrap().to_str().unwrap();
-        let extension = path.extension().unwrap().to_str().unwrap();
+    pub fn test_to_target_name(&self, file: &PathBuf) -> String {
+        let file_name = file.file_stem().unwrap().to_str().unwrap();
+        let extension = file.extension().unwrap().to_str().unwrap();
         let suffix = self.test_file_suffixes.get(extension).unwrap();
 
         format!("{}.{}", file_name.strip_suffix(suffix).unwrap(), extension)
     }
 
-    pub fn target_to_test_name(&self, file: &String) -> String {
-        let path = Path::new(&file);
-        let file_name = path.file_stem().unwrap().to_str().unwrap();
-        let extension = path.extension().unwrap().to_str().unwrap();
+    pub fn target_to_test_name(&self, file: &PathBuf) -> String {
+        let file_name = file.file_stem().unwrap().to_str().unwrap();
+        let extension = file.extension().unwrap().to_str().unwrap();
         let suffix = self.test_file_suffixes.get(extension).unwrap();
         format!("{}{}.{}", file_name, suffix, extension)
     }
 
-    pub fn is_test(&self, file: &String) -> bool {
-        let path = Path::new(&file);
-        let file_name = path.file_name().unwrap().to_str().unwrap();
-        let extension = path.extension().unwrap().to_str().unwrap();
+    pub fn is_test(&self, file: &PathBuf) -> bool {
+        let file_name = file.file_name().unwrap().to_str().unwrap();
+        let extension = file.extension().unwrap().to_str().unwrap();
         let test_regex = self.test_file_mappings.get(extension).unwrap();
         return test_regex.is_match(file_name);
     }
@@ -80,16 +89,33 @@ mod tests {
     #[test]
     fn test_is_test() {
         let config = Config::default();
-        let test_files = ["api_spec.rb", "db_spec.rb"];
+        let test_files = [PathBuf::from("api_spec.rb"), PathBuf::from("db_spec.rb")];
 
         for file in test_files {
-            assert!(config.is_test(&file.to_string()));
+            assert!(config.is_test(&file));
         }
 
-        let target_files = ["api.rb", "db.rb"];
+        let target_files = [PathBuf::from("api.rb"), PathBuf::from("db.rb")];
 
         for file in target_files {
-            assert_eq!(config.is_test(&file.to_string()), false);
+            assert_eq!(config.is_test(&file), false);
         }
+    }
+
+    #[test]
+    fn test_strip_primary_source_dirs_from_path() {
+        let config = Config {
+            primary_source_dir_mappings: HashMap::from([(
+                "rb".to_string(),
+                vec!["lib".to_string()],
+            )]),
+            ..Default::default()
+        };
+
+        let result = config.strip_primary_source_dirs_from_path(
+            &PathBuf::from("lib/bob/header_spec.rb"),
+            &"rb".to_string(),
+        );
+        assert_eq!(result, PathBuf::from("bob/header_spec.rb"));
     }
 }
