@@ -17,7 +17,7 @@ impl Config {
                 "rb".to_string(),
                 vec!["app".to_string(), "lib".to_string()],
             )]),
-            test_file_suffixes: HashMap::from([("rb".to_string(), "_spec.rb".to_string())]),
+            test_file_suffixes: HashMap::from([("rb".to_string(), "_spec".to_string())]),
             test_file_mappings: HashMap::from([(
                 "rb".to_string(),
                 Regex::new(r"_spec.rb").unwrap(),
@@ -47,12 +47,21 @@ impl Config {
         path.to_str().unwrap().to_string()
     }
 
+    pub fn test_to_target_name(&self, file: &String) -> String {
+        let path = Path::new(&file);
+        let file_name = path.file_stem().unwrap().to_str().unwrap();
+        let extension = path.extension().unwrap().to_str().unwrap();
+        let suffix = self.test_file_suffixes.get(extension).unwrap();
+
+        format!("{}.{}", file_name.strip_suffix(suffix).unwrap(), extension)
+    }
+
     pub fn target_to_test_name(&self, file: &String) -> String {
         let path = Path::new(&file);
         let file_name = path.file_stem().unwrap().to_str().unwrap();
         let extension = path.extension().unwrap().to_str().unwrap();
         let suffix = self.test_file_suffixes.get(extension).unwrap();
-        format!("{}{}", file_name, suffix)
+        format!("{}{}.{}", file_name, suffix, extension)
     }
 
     pub fn is_test(&self, file: &String) -> bool {
