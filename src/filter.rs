@@ -27,9 +27,6 @@ impl Filter {
     }
 
     fn existing_files(&self) -> Vec<PathBuf> {
-        for path in &self.paths {
-            println!("{:?}", std::fs::canonicalize(path));
-        }
         self.paths
             .iter()
             .filter(|path| path.exists())

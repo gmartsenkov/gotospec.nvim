@@ -118,21 +118,21 @@ mod tests {
         let ruby_lib_config = LanguageConfig {
             primary_source_dirs: vec!["lib".to_string()],
             test_file_suffix: "_spec".to_string(),
-            test_file_mappings: "_spec.rb".to_string(),
+            test_file_matcher: "_spec.rb".to_string(),
             test_folder: "spec".to_string(),
             omit_source_dir_from_test_dir: false,
         };
         let ruby_omit_source_dir_config = LanguageConfig {
             primary_source_dirs: vec!["lib".to_string(), "app".to_string()],
             test_file_suffix: "_spec".to_string(),
-            test_file_mappings: "_spec.rb".to_string(),
+            test_file_matcher: "_spec.rb".to_string(),
             test_folder: "spec".to_string(),
             omit_source_dir_from_test_dir: true,
         };
         let ruby_empty_source_config = LanguageConfig {
             primary_source_dirs: vec![],
             test_file_suffix: "_spec".to_string(),
-            test_file_mappings: "_spec.rb".to_string(),
+            test_file_matcher: "_spec.rb".to_string(),
             test_folder: "spec".to_string(),
             omit_source_dir_from_test_dir: false,
         };

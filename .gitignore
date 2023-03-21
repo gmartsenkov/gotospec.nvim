@@ -1,5 +1,5 @@
 /target
 /Cargo.lock
 /lua/deps
-/lua/goto.so
+/lua/goto_backend.so
 goto.so

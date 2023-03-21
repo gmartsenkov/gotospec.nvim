@@ -2,6 +2,7 @@ mod config;
 mod filter;
 mod finder;
 
+use std::fs;
 use std::path::PathBuf;
 
 use crate::config::Config;
@@ -10,9 +11,6 @@ use filter::Filter;
 use mlua::prelude::*;
 
 fn find_test_or_target(file: String, work_dir: String, config: Config) -> Vec<String> {
-    if config.is_test(&PathBuf::from(&file)) {
-        return vec!["is spec".to_string()];
-    }
     let suggestions = Finder {
         file: PathBuf::from(&file),
         work_dir: PathBuf::from(work_dir),
@@ -27,17 +25,40 @@ fn find_test_or_target(file: String, work_dir: String, config: Config) -> Vec<St
         .collect()
 }
 
+fn work_dir_config(work_dir: &String) -> Option<Config> {
+    let path = PathBuf::from(work_dir).join(".gotospec");
+
+    if path.exists() {
+        match fs::read_to_string(path) {
+            Ok(file) => return Some(serde_json::from_str::<Config>(file.as_str()).unwrap()),
+            Err(_) => return None,
+        }
+    }
+
+    None
+}
+
 fn lua_goto(
     lua: &Lua,
     (file, work_dir, conf): (String, String, LuaValue),
 ) -> LuaResult<Vec<String>> {
-    let config: Config = lua.from_value(conf)?;
+    let mut config: Config = lua.from_value(conf)?;
+
+    match work_dir_config(&work_dir) {
+        Some(work_dir_config) => {
+            for (k, v) in work_dir_config.language_configs {
+                config.language_configs.insert(k, v);
+            }
+        }
+        None => {}
+    };
+
     Ok(find_test_or_target(file, work_dir, config))
 }
 
 #[mlua::lua_module]
-fn goto(lua: &Lua) -> LuaResult<LuaTable> {
+fn goto_backend(lua: &Lua) -> LuaResult<LuaTable> {
     let exports = lua.create_table()?;
-    exports.set("goto", lua.create_function(lua_goto)?)?;
+    exports.set("jump", lua.create_function(lua_goto)?)?;
     Ok(exports)
 }

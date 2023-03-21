@@ -8,7 +8,7 @@ use std::{
 #[derive(Default, Debug, Clone, Serialize, Deserialize)]
 pub struct LanguageConfig {
     pub primary_source_dirs: Vec<String>,
-    pub test_file_mappings: String,
+    pub test_file_matcher: String,
     pub test_file_suffix: String,
     pub test_folder: String,
     pub omit_source_dir_from_test_dir: bool,
@@ -27,7 +27,7 @@ impl Default for Config {
                 LanguageConfig {
                     primary_source_dirs: vec!["app".to_string(), "lib".to_string()],
                     test_file_suffix: "_spec".to_string(),
-                    test_file_mappings: "_spec.rb".to_string(),
+                    test_file_matcher: "_spec.rb".to_string(),
                     test_folder: "spec".to_string(),
                     omit_source_dir_from_test_dir: false,
                 },
@@ -99,7 +99,7 @@ impl Config {
             .language_configs
             .get(extension)
             .unwrap()
-            .test_file_mappings;
+            .test_file_matcher;
 
         return Regex::new(&test_regex).unwrap().is_match(file_name);
     }
