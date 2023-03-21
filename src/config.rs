@@ -2,13 +2,13 @@ use std::{
     collections::HashMap,
     path::{Path, PathBuf},
 };
-
+use serde::{Deserialize, Serialize};
 use regex::Regex;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Config {
     pub primary_source_dir_mappings: HashMap<String, Vec<String>>,
-    pub test_file_mappings: HashMap<String, Regex>,
+    pub test_file_mappings: HashMap<String, String>,
     pub test_file_suffixes: HashMap<String, String>,
     pub test_folders: HashMap<String, String>,
 }
@@ -23,7 +23,7 @@ impl Default for Config {
             test_file_suffixes: HashMap::from([("rb".to_string(), "_spec".to_string())]),
             test_file_mappings: HashMap::from([(
                 "rb".to_string(),
-                Regex::new(r"_spec.rb").unwrap(),
+                "_spec.rb".to_string(),
             )]),
             test_folders: HashMap::from([("rb".to_string(), "spec".to_string())]),
         }
@@ -78,7 +78,8 @@ impl Config {
         let file_name = file.file_name().unwrap().to_str().unwrap();
         let extension = file.extension().unwrap().to_str().unwrap();
         let test_regex = self.test_file_mappings.get(extension).unwrap();
-        return test_regex.is_match(file_name);
+
+        return Regex::new(&test_regex).unwrap().is_match(file_name)
     }
 }
 

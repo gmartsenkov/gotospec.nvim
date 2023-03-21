@@ -9,6 +9,7 @@ edition = "2021"
 crate-type = ["cdylib"]
 
 [dependencies]
+serde = { version = "1.0", features = ["derive"] }
 regex = "1"
 itertools = "0.10"
-mlua = { version = "0.8", features = ["luajit", "vendored", "module", "macros", "send", "async"] }
+mlua = { version = "0.8", features = ["luajit", "vendored", "module", "serialize"] }

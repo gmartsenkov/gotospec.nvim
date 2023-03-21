@@ -27,8 +27,9 @@ fn find_test_or_target(file: String, work_dir: String, config: Config) -> Vec<St
         .collect()
 }
 
-fn lua_goto(_: &Lua, (file, work_dir): (String, String)) -> LuaResult<Vec<String>> {
-    Ok(find_test_or_target(file, work_dir, Config::default()))
+fn lua_goto(lua: &Lua, (file, work_dir, conf): (String, String, LuaValue)) -> LuaResult<Vec<String>> {
+    let config :Config = lua.from_value(conf)?;
+    Ok(find_test_or_target(file, work_dir, config))
 }
 
 #[mlua::lua_module]
