@@ -11,7 +11,7 @@ pub struct Finder {
 impl Finder {
     fn find_test(&self) -> Vec<PathBuf> {
         let extension = self.file.extension().unwrap().to_str().unwrap();
-        let test_folder = self.config.test_folders.get(extension).unwrap();
+        let test_folder = &self.config.language_configs.get(extension).unwrap().test_folder;
         let test_file_name = self.config.target_to_test_name(&self.file);
         let relative_path = self.relative_file_path();
         let mut suggestions: Vec<PathBuf> = Vec::new();
@@ -35,7 +35,7 @@ impl Finder {
     fn find_target(&self) -> Vec<PathBuf> {
         let target_file_name = self.config.test_to_target_name(&self.file);
         let extension = self.file.extension().unwrap().to_str().unwrap();
-        let test_folder = PathBuf::from(self.config.test_folders.get(extension).unwrap());
+        let test_folder = PathBuf::from(&self.config.language_configs.get(extension).unwrap().test_folder);
         let mut suggestions: Vec<PathBuf> = Vec::new();
 
         for dir in self.config.primary_source_dirs(&extension.to_string()) {
@@ -82,6 +82,8 @@ impl Finder {
 mod tests {
     use std::collections::HashMap;
 
+    use crate::config::LanguageConfig;
+
     use super::*;
 
     struct Test {
@@ -93,6 +95,18 @@ mod tests {
     #[test]
     fn test_find_spec() {
         let work_dir = PathBuf::from("/dev/backend");
+        let ruby_lib_config = LanguageConfig {
+            primary_source_dirs: vec!["lib".to_string()],
+            test_file_suffix: "_spec".to_string(),
+            test_file_mappings: "_spec.rb".to_string(),
+            test_folder: "spec".to_string()
+        };
+        let ruby_empty_source_config = LanguageConfig {
+            primary_source_dirs: vec![],
+            test_file_suffix: "_spec".to_string(),
+            test_file_mappings: "_spec.rb".to_string(),
+            test_folder: "spec".to_string()
+        };
         let tests = [
             Test {
                 config: Config::default(),
@@ -127,40 +141,22 @@ mod tests {
                 ],
             },
             Test {
-                config: Config {
-                    primary_source_dir_mappings: HashMap::from([(
-                        "rb".to_string(),
-                        vec!["lib".to_string()],
-                    )]),
-                    ..Default::default()
-                },
+                config: Config{language_configs: HashMap::from([("rb".to_string(), ruby_lib_config.clone())])},
                 file: PathBuf::from("/dev/backend/lib/header.rb"),
                 expected: vec!["/dev/backend/spec/lib/header_spec.rb"],
             },
             Test {
-                config: Config {
-                    primary_source_dir_mappings: HashMap::from([(
-                        "rb".to_string(),
-                        vec!["lib".to_string()],
-                    )]),
-                    ..Default::default()
-                },
+                config: Config{language_configs: HashMap::from([("rb".to_string(), ruby_lib_config.clone())])},
                 file: PathBuf::from("/dev/backend/spec/lib/header_spec.rb"),
                 expected: vec!["/dev/backend/lib/header.rb"],
             },
             Test {
-                config: Config {
-                    primary_source_dir_mappings: HashMap::from([("rb".to_string(), vec![])]),
-                    ..Default::default()
-                },
+                config: Config{language_configs: HashMap::from([("rb".to_string(), ruby_empty_source_config.clone())])},
                 file: PathBuf::from("/dev/backend/header.rb"),
                 expected: vec!["/dev/backend/spec/header_spec.rb"],
             },
             Test {
-                config: Config {
-                    primary_source_dir_mappings: HashMap::from([("rb".to_string(), vec![])]),
-                    ..Default::default()
-                },
+                config: Config{language_configs: HashMap::from([("rb".to_string(), ruby_empty_source_config.clone())])},
                 file: PathBuf::from("/dev/backend/spec/header_spec.rb"),
                 expected: vec!["/dev/backend/header.rb"],
             },

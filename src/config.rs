@@ -5,42 +5,48 @@ use std::{
 use serde::{Deserialize, Serialize};
 use regex::Regex;
 
+#[derive(Default, Debug, Clone, Serialize, Deserialize)]
+pub struct LanguageConfig {
+    pub primary_source_dirs: Vec<String>,
+    pub test_file_mappings: String,
+    pub test_file_suffix: String,
+    pub test_folder: String,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Config {
-    pub primary_source_dir_mappings: HashMap<String, Vec<String>>,
-    pub test_file_mappings: HashMap<String, String>,
-    pub test_file_suffixes: HashMap<String, String>,
-    pub test_folders: HashMap<String, String>,
+    pub language_configs: HashMap<String, LanguageConfig>,
 }
 
 impl Default for Config {
     fn default() -> Config {
         Config {
-            primary_source_dir_mappings: HashMap::from([(
-                "rb".to_string(),
-                vec!["app".to_string(), "lib".to_string()],
-            )]),
-            test_file_suffixes: HashMap::from([("rb".to_string(), "_spec".to_string())]),
-            test_file_mappings: HashMap::from([(
-                "rb".to_string(),
-                "_spec.rb".to_string(),
-            )]),
-            test_folders: HashMap::from([("rb".to_string(), "spec".to_string())]),
+            language_configs: HashMap::from([
+              (
+                  "rb".to_string(),
+                  LanguageConfig{
+                      primary_source_dirs: vec!["app".to_string(), "lib".to_string()],
+                      test_file_suffix: "_spec".to_string(),
+                      test_file_mappings: "_spec.rb".to_string(),
+                      test_folder: "spec".to_string()
+                  }
+              )
+            ]),
         }
     }
 }
 impl Config {
     pub fn primary_source_dirs(&self, extension: &String) -> Vec<String> {
-        let dirs = self
-            .primary_source_dir_mappings
+        let dirs = &self
+            .language_configs
             .get(extension)
             .unwrap()
-            .to_vec();
+            .primary_source_dirs;
 
         if dirs.len() == 0 {
             vec!["".to_string()]
         } else {
-            dirs
+            dirs.clone()
         }
     }
 
@@ -50,7 +56,7 @@ impl Config {
         extension: &String,
     ) -> PathBuf {
         let mut path = Path::new(path);
-        let dirs = self.primary_source_dir_mappings.get(extension).unwrap();
+        let dirs = &self.language_configs.get(extension).unwrap().primary_source_dirs;
 
         for dir in dirs {
             path = path.strip_prefix(dir).unwrap_or_else(|_| path);
@@ -62,7 +68,7 @@ impl Config {
     pub fn test_to_target_name(&self, file: &PathBuf) -> String {
         let file_name = file.file_stem().unwrap().to_str().unwrap();
         let extension = file.extension().unwrap().to_str().unwrap();
-        let suffix = self.test_file_suffixes.get(extension).unwrap();
+        let suffix = &self.language_configs.get(extension).unwrap().test_file_suffix;
 
         format!("{}.{}", file_name.strip_suffix(suffix).unwrap(), extension)
     }
@@ -70,14 +76,14 @@ impl Config {
     pub fn target_to_test_name(&self, file: &PathBuf) -> String {
         let file_name = file.file_stem().unwrap().to_str().unwrap();
         let extension = file.extension().unwrap().to_str().unwrap();
-        let suffix = self.test_file_suffixes.get(extension).unwrap();
+        let suffix = &self.language_configs.get(extension).unwrap().test_file_suffix;
         format!("{}{}.{}", file_name, suffix, extension)
     }
 
     pub fn is_test(&self, file: &PathBuf) -> bool {
         let file_name = file.file_name().unwrap().to_str().unwrap();
         let extension = file.extension().unwrap().to_str().unwrap();
-        let test_regex = self.test_file_mappings.get(extension).unwrap();
+        let test_regex = &self.language_configs.get(extension).unwrap().test_file_mappings;
 
         return Regex::new(&test_regex).unwrap().is_match(file_name)
     }
@@ -106,11 +112,13 @@ mod tests {
     #[test]
     fn test_strip_primary_source_dirs_from_path() {
         let config = Config {
-            primary_source_dir_mappings: HashMap::from([(
+            language_configs: HashMap::from([(
                 "rb".to_string(),
-                vec!["lib".to_string()],
-            )]),
-            ..Default::default()
+                LanguageConfig {
+                primary_source_dirs: vec!["lib".to_string()],
+                ..Default::default()
+                }
+            )])
         };
 
         let result = config.strip_primary_source_dirs_from_path(
