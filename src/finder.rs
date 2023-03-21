@@ -1,6 +1,6 @@
 use crate::config::Config;
 use itertools::Itertools;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 
 pub struct Finder {
     pub file: PathBuf,
@@ -9,7 +9,7 @@ pub struct Finder {
 }
 
 impl Finder {
-    fn find_test(&self) -> Vec<String> {
+    fn find_test(&self) -> Vec<PathBuf> {
         let extension = self.file.extension().unwrap().to_str().unwrap();
         let test_folder = self.config.test_folders.get(extension).unwrap();
         let test_file_name = self.config.target_to_test_name(&self.file);
@@ -28,14 +28,11 @@ impl Finder {
                     .join(&test_file_name),
             );
         }
-        suggestions
-            .into_iter()
-            .unique()
-            .map(|p| p.to_str().unwrap().to_string())
-            .collect()
+
+        suggestions.into_iter().unique().collect()
     }
 
-    fn find_target(&self) -> Vec<String> {
+    fn find_target(&self) -> Vec<PathBuf> {
         let target_file_name = self.config.test_to_target_name(&self.file);
         let extension = self.file.extension().unwrap().to_str().unwrap();
         let test_folder = PathBuf::from(self.config.test_folders.get(extension).unwrap());
@@ -60,14 +57,10 @@ impl Finder {
             )
         }
 
-        suggestions
-            .into_iter()
-            .unique()
-            .map(|p| p.to_str().unwrap().to_string())
-            .collect()
+        suggestions.into_iter().unique().collect()
     }
 
-    pub fn find_test_or_target(&self) -> Vec<String> {
+    pub fn find_test_or_target(&self) -> Vec<PathBuf> {
         if self.config.is_test(&self.file) {
             self.find_target()
         } else {
@@ -163,6 +156,14 @@ mod tests {
                 file: PathBuf::from("/dev/backend/header.rb"),
                 expected: vec!["/dev/backend/spec/header_spec.rb"],
             },
+            Test {
+                config: Config {
+                    primary_source_dir_mappings: HashMap::from([("rb".to_string(), vec![])]),
+                    ..Default::default()
+                },
+                file: PathBuf::from("/dev/backend/spec/header_spec.rb"),
+                expected: vec!["/dev/backend/header.rb"],
+            },
         ];
 
         for (i, test) in tests.iter().enumerate() {
@@ -172,7 +173,11 @@ mod tests {
                 config: test.config.clone(),
             };
             assert_eq!(
-                finder.find_test_or_target(),
+                finder
+                    .find_test_or_target()
+                    .iter()
+                    .map(|x| x.to_str().unwrap())
+                    .collect_vec(),
                 test.expected,
                 "Test number {} failed",
                 i
