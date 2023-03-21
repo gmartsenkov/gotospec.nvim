@@ -1,9 +1,9 @@
+use regex::Regex;
+use serde::{Deserialize, Serialize};
 use std::{
     collections::HashMap,
     path::{Path, PathBuf},
 };
-use serde::{Deserialize, Serialize};
-use regex::Regex;
 
 #[derive(Default, Debug, Clone, Serialize, Deserialize)]
 pub struct LanguageConfig {
@@ -11,6 +11,7 @@ pub struct LanguageConfig {
     pub test_file_mappings: String,
     pub test_file_suffix: String,
     pub test_folder: String,
+    pub omit_source_dir_from_test_dir: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -21,17 +22,16 @@ pub struct Config {
 impl Default for Config {
     fn default() -> Config {
         Config {
-            language_configs: HashMap::from([
-              (
-                  "rb".to_string(),
-                  LanguageConfig{
-                      primary_source_dirs: vec!["app".to_string(), "lib".to_string()],
-                      test_file_suffix: "_spec".to_string(),
-                      test_file_mappings: "_spec.rb".to_string(),
-                      test_folder: "spec".to_string()
-                  }
-              )
-            ]),
+            language_configs: HashMap::from([(
+                "rb".to_string(),
+                LanguageConfig {
+                    primary_source_dirs: vec!["app".to_string(), "lib".to_string()],
+                    test_file_suffix: "_spec".to_string(),
+                    test_file_mappings: "_spec.rb".to_string(),
+                    test_folder: "spec".to_string(),
+                    omit_source_dir_from_test_dir: false,
+                },
+            )]),
         }
     }
 }
@@ -56,7 +56,11 @@ impl Config {
         extension: &String,
     ) -> PathBuf {
         let mut path = Path::new(path);
-        let dirs = &self.language_configs.get(extension).unwrap().primary_source_dirs;
+        let dirs = &self
+            .language_configs
+            .get(extension)
+            .unwrap()
+            .primary_source_dirs;
 
         for dir in dirs {
             path = path.strip_prefix(dir).unwrap_or_else(|_| path);
@@ -68,7 +72,11 @@ impl Config {
     pub fn test_to_target_name(&self, file: &PathBuf) -> String {
         let file_name = file.file_stem().unwrap().to_str().unwrap();
         let extension = file.extension().unwrap().to_str().unwrap();
-        let suffix = &self.language_configs.get(extension).unwrap().test_file_suffix;
+        let suffix = &self
+            .language_configs
+            .get(extension)
+            .unwrap()
+            .test_file_suffix;
 
         format!("{}.{}", file_name.strip_suffix(suffix).unwrap(), extension)
     }
@@ -76,16 +84,24 @@ impl Config {
     pub fn target_to_test_name(&self, file: &PathBuf) -> String {
         let file_name = file.file_stem().unwrap().to_str().unwrap();
         let extension = file.extension().unwrap().to_str().unwrap();
-        let suffix = &self.language_configs.get(extension).unwrap().test_file_suffix;
+        let suffix = &self
+            .language_configs
+            .get(extension)
+            .unwrap()
+            .test_file_suffix;
         format!("{}{}.{}", file_name, suffix, extension)
     }
 
     pub fn is_test(&self, file: &PathBuf) -> bool {
         let file_name = file.file_name().unwrap().to_str().unwrap();
         let extension = file.extension().unwrap().to_str().unwrap();
-        let test_regex = &self.language_configs.get(extension).unwrap().test_file_mappings;
+        let test_regex = &self
+            .language_configs
+            .get(extension)
+            .unwrap()
+            .test_file_mappings;
 
-        return Regex::new(&test_regex).unwrap().is_match(file_name)
+        return Regex::new(&test_regex).unwrap().is_match(file_name);
     }
 }
 
@@ -115,10 +131,10 @@ mod tests {
             language_configs: HashMap::from([(
                 "rb".to_string(),
                 LanguageConfig {
-                primary_source_dirs: vec!["lib".to_string()],
-                ..Default::default()
-                }
-            )])
+                    primary_source_dirs: vec!["lib".to_string()],
+                    ..Default::default()
+                },
+            )]),
         };
 
         let result = config.strip_primary_source_dirs_from_path(

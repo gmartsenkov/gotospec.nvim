@@ -11,11 +11,24 @@ pub struct Finder {
 impl Finder {
     fn find_test(&self) -> Vec<PathBuf> {
         let extension = self.file.extension().unwrap().to_str().unwrap();
-        let test_folder = &self.config.language_configs.get(extension).unwrap().test_folder;
+        let config = self.config.language_configs.get(extension).unwrap();
+        let test_folder = &config.test_folder;
         let test_file_name = self.config.target_to_test_name(&self.file);
         let relative_path = self.relative_file_path();
-        let mut suggestions: Vec<PathBuf> = Vec::new();
 
+        if config.omit_source_dir_from_test_dir {
+            return vec![PathBuf::from(self.work_dir.clone())
+                .join(&test_folder)
+                .join(
+                    self.config.strip_primary_source_dirs_from_path(
+                        &relative_path,
+                        &extension.to_string(),
+                    ),
+                )
+                .join(&test_file_name)];
+        }
+
+        let mut suggestions: Vec<PathBuf> = Vec::new();
         for dir in self.config.primary_source_dirs(&extension.to_string()) {
             suggestions.push(
                 PathBuf::from(self.work_dir.clone())
@@ -35,7 +48,14 @@ impl Finder {
     fn find_target(&self) -> Vec<PathBuf> {
         let target_file_name = self.config.test_to_target_name(&self.file);
         let extension = self.file.extension().unwrap().to_str().unwrap();
-        let test_folder = PathBuf::from(&self.config.language_configs.get(extension).unwrap().test_folder);
+        let test_folder = PathBuf::from(
+            &self
+                .config
+                .language_configs
+                .get(extension)
+                .unwrap()
+                .test_folder,
+        );
         let mut suggestions: Vec<PathBuf> = Vec::new();
 
         for dir in self.config.primary_source_dirs(&extension.to_string()) {
@@ -99,13 +119,22 @@ mod tests {
             primary_source_dirs: vec!["lib".to_string()],
             test_file_suffix: "_spec".to_string(),
             test_file_mappings: "_spec.rb".to_string(),
-            test_folder: "spec".to_string()
+            test_folder: "spec".to_string(),
+            omit_source_dir_from_test_dir: false,
+        };
+        let ruby_omit_source_dir_config = LanguageConfig {
+            primary_source_dirs: vec!["lib".to_string(), "app".to_string()],
+            test_file_suffix: "_spec".to_string(),
+            test_file_mappings: "_spec.rb".to_string(),
+            test_folder: "spec".to_string(),
+            omit_source_dir_from_test_dir: true,
         };
         let ruby_empty_source_config = LanguageConfig {
             primary_source_dirs: vec![],
             test_file_suffix: "_spec".to_string(),
             test_file_mappings: "_spec.rb".to_string(),
-            test_folder: "spec".to_string()
+            test_folder: "spec".to_string(),
+            omit_source_dir_from_test_dir: false,
         };
         let tests = [
             Test {
@@ -133,6 +162,16 @@ mod tests {
                 ],
             },
             Test {
+                config: Config {
+                    language_configs: HashMap::from([(
+                        "rb".to_string(),
+                        ruby_omit_source_dir_config.clone(),
+                    )]),
+                },
+                file: PathBuf::from("/dev/backend/app/api/header.rb"),
+                expected: vec!["/dev/backend/spec/api/header_spec.rb"],
+            },
+            Test {
                 config: Config::default(),
                 file: PathBuf::from("/dev/backend/spec/api/header_spec.rb"),
                 expected: vec![
@@ -141,22 +180,36 @@ mod tests {
                 ],
             },
             Test {
-                config: Config{language_configs: HashMap::from([("rb".to_string(), ruby_lib_config.clone())])},
+                config: Config {
+                    language_configs: HashMap::from([("rb".to_string(), ruby_lib_config.clone())]),
+                },
                 file: PathBuf::from("/dev/backend/lib/header.rb"),
                 expected: vec!["/dev/backend/spec/lib/header_spec.rb"],
             },
             Test {
-                config: Config{language_configs: HashMap::from([("rb".to_string(), ruby_lib_config.clone())])},
+                config: Config {
+                    language_configs: HashMap::from([("rb".to_string(), ruby_lib_config.clone())]),
+                },
                 file: PathBuf::from("/dev/backend/spec/lib/header_spec.rb"),
                 expected: vec!["/dev/backend/lib/header.rb"],
             },
             Test {
-                config: Config{language_configs: HashMap::from([("rb".to_string(), ruby_empty_source_config.clone())])},
+                config: Config {
+                    language_configs: HashMap::from([(
+                        "rb".to_string(),
+                        ruby_empty_source_config.clone(),
+                    )]),
+                },
                 file: PathBuf::from("/dev/backend/header.rb"),
                 expected: vec!["/dev/backend/spec/header_spec.rb"],
             },
             Test {
-                config: Config{language_configs: HashMap::from([("rb".to_string(), ruby_empty_source_config.clone())])},
+                config: Config {
+                    language_configs: HashMap::from([(
+                        "rb".to_string(),
+                        ruby_empty_source_config.clone(),
+                    )]),
+                },
                 file: PathBuf::from("/dev/backend/spec/header_spec.rb"),
                 expected: vec!["/dev/backend/header.rb"],
             },
