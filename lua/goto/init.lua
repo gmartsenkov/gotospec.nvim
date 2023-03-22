@@ -1,6 +1,5 @@
 local M = {}
 
-local loaded = false
 local options = {}
 local defaults = {
   language_configs = {
@@ -19,11 +18,6 @@ function M.test()
 end
 
 function M.jump()
-  if loaded ~= false then
-    print("goto backend was not compiled")
-    return
-  end
-
   local buffer_name = vim.api.nvim_buf_get_name(0)
   local work_dir = vim.fn.getcwd()
 
@@ -48,13 +42,6 @@ function M.jump()
         print("Invalid selection")
       end
     end)
-end
-
-function M.setup()
-  local _, error = loadfile("../goto_backend.so")
-  if error then
-    loaded = true
-  end
 end
 
 return M;
