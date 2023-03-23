@@ -11,7 +11,7 @@ pub struct Finder {
 impl Finder {
     fn find_test(&self) -> Vec<PathBuf> {
         let extension = self.file.extension().unwrap().to_str().unwrap();
-        let config = self.config.language_configs.get(extension).unwrap();
+        let config = self.config.find_language_config(extension);
         let test_folder = &config.test_folder;
         let test_file_name = self.config.target_to_test_name(&self.file);
         let relative_path = self.relative_file_path();
@@ -48,14 +48,7 @@ impl Finder {
     fn find_target(&self) -> Vec<PathBuf> {
         let target_file_name = self.config.test_to_target_name(&self.file);
         let extension = self.file.extension().unwrap().to_str().unwrap();
-        let test_folder = PathBuf::from(
-            &self
-                .config
-                .language_configs
-                .get(extension)
-                .unwrap()
-                .test_folder,
-        );
+        let test_folder = PathBuf::from(&self.config.find_language_config(extension).test_folder);
         let mut suggestions: Vec<PathBuf> = Vec::new();
 
         for dir in self.config.primary_source_dirs(&extension.to_string()) {
@@ -121,6 +114,7 @@ mod tests {
             test_file_matcher: "_spec.rb".to_string(),
             test_folder: "spec".to_string(),
             omit_source_dir_from_test_dir: false,
+            ..Default::default()
         };
         let ruby_omit_source_dir_config = LanguageConfig {
             primary_source_dirs: vec!["lib".to_string(), "app".to_string()],
@@ -128,6 +122,7 @@ mod tests {
             test_file_matcher: "_spec.rb".to_string(),
             test_folder: "spec".to_string(),
             omit_source_dir_from_test_dir: true,
+            ..Default::default()
         };
         let ruby_empty_source_config = LanguageConfig {
             primary_source_dirs: vec![],
@@ -135,6 +130,7 @@ mod tests {
             test_file_matcher: "_spec.rb".to_string(),
             test_folder: "spec".to_string(),
             omit_source_dir_from_test_dir: false,
+            ..Default::default()
         };
         let tests = [
             Test {
@@ -212,6 +208,16 @@ mod tests {
                 },
                 file: PathBuf::from("/dev/backend/spec/header_spec.rb"),
                 expected: vec!["/dev/backend/header.rb"],
+            },
+            Test {
+                config: Config::default(),
+                file: PathBuf::from("/dev/backend/lib/app/header.ex"),
+                expected: vec!["/dev/backend/test/app/header_test.exs"],
+            },
+            Test {
+                config: Config::default(),
+                file: PathBuf::from("/dev/backend/test/app/header_test.exs"),
+                expected: vec!["/dev/backend/lib/app/header.ex"],
             },
         ];
 

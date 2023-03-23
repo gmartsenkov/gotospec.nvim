@@ -9,13 +9,18 @@ local defaults = {
       test_file_matcher = "_spec.rb",
       test_folder = "spec",
       omit_source_dir_from_test_dir = false
+    },
+    ["ex"] = {
+      primary_source_dirs = {"lib"},
+      test_file_suffix = "_test",
+      test_file_matcher = "_test.exs",
+      test_folder = "test",
+      omit_source_dir_from_test_dir = true,
+      test_file_extension = "exs",
+      source_file_extension = "ex"
     }
   }
 }
-
-function M.test()
-  return "hello"
-end
 
 function M.jump()
   local buffer_name = vim.api.nvim_buf_get_name(0)

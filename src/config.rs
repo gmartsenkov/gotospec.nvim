@@ -12,6 +12,8 @@ pub struct LanguageConfig {
     pub test_file_suffix: String,
     pub test_folder: String,
     pub omit_source_dir_from_test_dir: bool,
+    pub test_file_extension: Option<String>,
+    pub source_file_extension: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -22,26 +24,38 @@ pub struct Config {
 impl Default for Config {
     fn default() -> Config {
         Config {
-            language_configs: HashMap::from([(
-                "rb".to_string(),
-                LanguageConfig {
-                    primary_source_dirs: vec!["app".to_string(), "lib".to_string()],
-                    test_file_suffix: "_spec".to_string(),
-                    test_file_matcher: "_spec.rb".to_string(),
-                    test_folder: "spec".to_string(),
-                    omit_source_dir_from_test_dir: false,
-                },
-            )]),
+            language_configs: HashMap::from([
+                (
+                    "rb".to_string(),
+                    LanguageConfig {
+                        primary_source_dirs: vec!["app".to_string(), "lib".to_string()],
+                        test_file_suffix: "_spec".to_string(),
+                        test_file_matcher: "_spec.rb".to_string(),
+                        test_folder: "spec".to_string(),
+                        omit_source_dir_from_test_dir: false,
+                        ..Default::default()
+                    },
+                ),
+                (
+                    "ex".to_string(),
+                    LanguageConfig {
+                        primary_source_dirs: vec!["lib".to_string()],
+                        test_file_suffix: "_test".to_string(),
+                        test_file_matcher: "_test.exs".to_string(),
+                        test_folder: "test".to_string(),
+                        omit_source_dir_from_test_dir: true,
+                        test_file_extension: Some("exs".to_string()),
+                        source_file_extension: Some("ex".to_string()),
+                        ..Default::default()
+                    },
+                ),
+            ]),
         }
     }
 }
 impl Config {
     pub fn primary_source_dirs(&self, extension: &String) -> Vec<String> {
-        let dirs = &self
-            .language_configs
-            .get(extension)
-            .unwrap()
-            .primary_source_dirs;
+        let dirs = &self.find_language_config(extension).primary_source_dirs;
 
         if dirs.len() == 0 {
             vec!["".to_string()]
@@ -56,11 +70,7 @@ impl Config {
         extension: &String,
     ) -> PathBuf {
         let mut path = Path::new(path);
-        let dirs = &self
-            .language_configs
-            .get(extension)
-            .unwrap()
-            .primary_source_dirs;
+        let dirs = &self.find_language_config(extension).primary_source_dirs;
 
         for dir in dirs {
             path = path.strip_prefix(dir).unwrap_or_else(|_| path);
@@ -72,36 +82,53 @@ impl Config {
     pub fn test_to_target_name(&self, file: &PathBuf) -> String {
         let file_name = file.file_stem().unwrap().to_str().unwrap();
         let extension = file.extension().unwrap().to_str().unwrap();
-        let suffix = &self
-            .language_configs
-            .get(extension)
-            .unwrap()
-            .test_file_suffix;
+        let config = &self.find_language_config(extension);
+        let suffix = &config.test_file_suffix;
+        let source_extension = match &config.source_file_extension {
+            Some(ex) => ex.as_str(),
+            None => extension,
+        };
 
-        format!("{}.{}", file_name.strip_suffix(suffix).unwrap(), extension)
+        format!(
+            "{}.{}",
+            file_name.strip_suffix(suffix).unwrap(),
+            source_extension
+        )
     }
 
     pub fn target_to_test_name(&self, file: &PathBuf) -> String {
         let file_name = file.file_stem().unwrap().to_str().unwrap();
         let extension = file.extension().unwrap().to_str().unwrap();
-        let suffix = &self
-            .language_configs
-            .get(extension)
-            .unwrap()
-            .test_file_suffix;
-        format!("{}{}.{}", file_name, suffix, extension)
+        let config = &self.find_language_config(extension);
+        let test_extension = match &config.test_file_extension {
+            Some(ex) => ex.as_str(),
+            None => extension,
+        };
+
+        format!(
+            "{}{}.{}",
+            file_name, config.test_file_suffix, test_extension
+        )
     }
 
     pub fn is_test(&self, file: &PathBuf) -> bool {
         let file_name = file.file_name().unwrap().to_str().unwrap();
         let extension = file.extension().unwrap().to_str().unwrap();
-        let test_regex = &self
-            .language_configs
-            .get(extension)
-            .unwrap()
-            .test_file_matcher;
+        let test_regex = &self.find_language_config(extension).test_file_matcher;
 
         return Regex::new(&test_regex).unwrap().is_match(file_name);
+    }
+
+    pub fn find_language_config(&self, extension: &str) -> &LanguageConfig {
+        match &self.language_configs.get(extension) {
+            Some(config) => return &config,
+            None => self
+                .language_configs
+                .values()
+                .into_iter()
+                .find(|c| c.test_file_extension == Some(extension.to_string()))
+                .unwrap(),
+        }
     }
 }
 
