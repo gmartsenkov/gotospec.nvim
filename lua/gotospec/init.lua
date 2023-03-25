@@ -8,7 +8,7 @@ local defaults = {
       test_file_suffix = "_spec",
       test_file_matcher = "_spec.rb",
       test_folder = "spec",
-      omit_source_dir_from_test_dir = false
+      omit_source_dir_from_test_dir = true
     },
     ["ex"] = {
       primary_source_dirs = {"lib"},
