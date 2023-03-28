@@ -49,4 +49,17 @@ function M.jump()
     end)
 end
 
+function M.jump_suggestion()
+  local buffer_name = vim.api.nvim_buf_get_name(0)
+  local work_dir = vim.fn.getcwd()
+
+  if vim.fn.filereadable(buffer_name) ~= 1 then
+    print("Current file does not exist")
+    return
+  end
+
+  local suggestions = require("goto_backend").jump(buffer_name, work_dir, defaults)
+  return suggestions[1]
+end
+
 return M;
