@@ -11,8 +11,20 @@ use filter::Filter;
 use mlua::prelude::*;
 
 fn find_test_or_target(file: String, work_dir: String, config: Config) -> Vec<String> {
+    let file = PathBuf::from(&file);
+
+    match file.extension() {
+        Some(extension) => {
+            let extension = extension.to_str().unwrap();
+            if !config.language_configs.contains_key(extension) {
+                return vec![];
+            }
+        }
+        None => return vec![],
+    }
+
     let suggestions = Finder {
-        file: PathBuf::from(&file),
+        file,
         work_dir: PathBuf::from(work_dir),
         config,
     }
