@@ -22,6 +22,10 @@ local defaults = {
   }
 }
 
+function M.setup(opts)
+  options = vim.tbl_deep_extend("force", {}, defaults, opts or {})
+end
+
 function M.jump(cwd)
   local buffer_name = vim.api.nvim_buf_get_name(0)
   local work_dir = cwd or vim.fn.getcwd()
@@ -31,7 +35,7 @@ function M.jump(cwd)
     return
   end
 
-  local suggestions = require("goto_backend").jump(buffer_name, work_dir, defaults)
+  local suggestions = require("goto_backend").jump(buffer_name, work_dir, options)
   if #suggestions == 1 then
      vim.cmd("e " .. suggestions[1])
       return
@@ -58,7 +62,7 @@ function M.jump_suggestion(cwd)
     return
   end
 
-  local suggestions = require("goto_backend").jump(buffer_name, work_dir, defaults)
+  local suggestions = require("goto_backend").jump(buffer_name, work_dir, options)
   return suggestions[1]
 end
 
