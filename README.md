@@ -14,6 +14,9 @@ Using [lazy.nvim](https://github.com/folke/lazy.nvim)
   lazy = false,
   build = "make",
   dependencies = { 'jghauser/mkdir.nvim' }
+  config = function()
+    require("gotospec").setup({})
+  end
 }
 ```
 
