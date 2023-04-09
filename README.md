@@ -10,7 +10,7 @@ Using [lazy.nvim](https://github.com/folke/lazy.nvim)
 
 ```lua
 {
-  "gmartsenkov/gotospec",
+  "gmartsenkov/gotospec.nvim",
   lazy = false,
   build = "make",
   dependencies = { 'jghauser/mkdir.nvim' }
