@@ -30,11 +30,6 @@ function M.jump(cwd)
   local buffer_name = vim.api.nvim_buf_get_name(0)
   local work_dir = cwd or vim.fn.getcwd()
 
-  if vim.fn.filereadable(buffer_name) ~= 1 then
-    print("Current file does not exist")
-    return
-  end
-
   local suggestions = require("goto_backend").jump(buffer_name, work_dir, options)
   if #suggestions == 1 then
      vim.cmd("e " .. suggestions[1])
@@ -56,11 +51,6 @@ end
 function M.jump_suggestion(cwd)
   local buffer_name = vim.api.nvim_buf_get_name(0)
   local work_dir = cwd or vim.fn.getcwd()
-
-  if vim.fn.filereadable(buffer_name) ~= 1 then
-    print("Current file does not exist")
-    return
-  end
 
   local suggestions = require("goto_backend").jump(buffer_name, work_dir, options)
   return suggestions[1]
