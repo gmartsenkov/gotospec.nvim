@@ -49,13 +49,10 @@ Example:
 ```
 
 ## Custom cwd (current working directory)
-The plugin uses `vim.fn.getcwd()` by default to determine the project root, however that won't always be accurate. 
-
-To fix this I've created [root.nvim](https://github.com/gmartsenkov/root.nvim) which providers a helper function that returns the project root.
-
-The `jump` method will take an optional `cwd` path, if that returns nil it'll default to `vim.fn.getcwd()`
-
-Example usage -
+The plugin uses `vim.fn.getcwd()` by default to determine the project root, however that won't always be accurate.  
+To fix this I've created [root.nvim](https://github.com/gmartsenkov/root.nvim) which providers a helper function that returns the project root.  
+The `jump` method will take an optional `cwd` path, if that returns nil it'll default to `vim.fn.getcwd()`  
+Example usage -  
 ```lua
 ["<leader>tt"] = {
   function()
