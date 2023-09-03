@@ -219,6 +219,11 @@ mod tests {
                 file: PathBuf::from("/dev/backend/test/app/header_test.exs"),
                 expected: vec!["/dev/backend/lib/app/header.ex"],
             },
+            Test {
+                config: Config::default(),
+                file: PathBuf::from("/dev/backend/test/goblin_web/controllers/auth_controller_test.exs"),
+                expected: vec!["/dev/backend/lib/goblin_web/controllers/auth_controller.ex"],
+            },
         ];
 
         for (i, test) in tests.iter().enumerate() {
